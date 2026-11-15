@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Penalty & coup franc — Three.js</title>
+  <link rel="stylesheet" href="style.css" />
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.165.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.165.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div id="hud">
+    <div id="top">
+      <div id="modes">
+        <button class="mode active" data-mode="penalty">Penalty</button>
+        <button class="mode" data-mode="freekick">Coup franc</button>
+        <button class="mode" id="toggleWall" hidden>Mur : oui</button>
+      </div>
+      <div id="score">Buts <span id="goals">0</span> / Tirs <span id="shots">0</span></div>
+    </div>
+
+    <div id="message"></div>
+
+    <!-- Flèche de tir tracée pendant le glisser (coordonnées en pixels écran) -->
+    <svg id="arrow" class="hidden">
+      <line id="arrowLine" stroke="#ffd54f" stroke-width="10" stroke-linecap="round" />
+      <polygon id="arrowHead" fill="#ffd54f" />
+    </svg>
+
+    <div id="bottom">
+      <div id="instruction"></div>
+      <div id="gauges">
+        <div class="gauge">
+          <label>Puissance <span id="powerValue">0 %</span></label>
+          <div class="bar" id="barPower"><div class="fill" id="fillPower"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="loading">Chargement des personnages…</div>
+  </div>
+
+  <script type="module" src="js/game.js"></script>
+</body>
+</html>
