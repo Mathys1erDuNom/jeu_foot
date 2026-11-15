@@ -133,8 +133,30 @@ export function predictCrossing(pos, vel, spin, maxTime = 3) {
  * `targetY` sur la ligne de but, en tenant compte de la traînée de l'air.
  * La direction horizontale est fixée par `dirH`.
  */
-export function solveLaunchAngle(origin, dirH, speed, targetY) {
-  let best = { err: Infinity, angle: 0 };
+/**
+ * Hauteur de la balle (sans collisions) lorsqu'elle a parcouru `dist` mètres
+ * horizontalement dans la direction `dirH`. Renvoie BALL_RADIUS si elle touche
+ * le sol avant.
+ */
+export function heightAtDistance(origin, dirH, vel, dist) {
+  const ball = { pos: origin.clone(), vel: vel.clone(), spin: ZERO.clone() };
+  const dt = 1 / 240;
+  for (let t = 0; t < 3; t += dt) {
+    integrate(ball, dt);
+    const along = (ball.pos.x - origin.x) * dirH.x + (ball.pos.z - origin.z) * dirH.z;
+    if (along >= dist) return ball.pos.y;
+    if (ball.pos.y <= BALL_RADIUS + 1e-3) return BALL_RADIUS;
+  }
+  return 0;
+}
+
+/**
+ * Trouve l'angle de tir (en radians) qui fait passer la balle à la hauteur
+ * `targetY` sur la ligne de but. `obstacle` = { dist, top } (un mur) : la balle
+ * doit passer au-dessus de `top` à la distance `dist`, sinon le tir est pénalisé.
+ */
+export function solveLaunchAngle(origin, dirH, speed, targetY, obstacle = null) {
+  let best = { score: Infinity, angle: 0 };
   for (let deg = -2; deg <= 45; deg += 0.25) {
     const a = THREE.MathUtils.degToRad(deg);
     const vel = new THREE.Vector3(
@@ -144,8 +166,12 @@ export function solveLaunchAngle(origin, dirH, speed, targetY) {
     );
     const hit = predictCrossing(origin, vel, ZERO, 2.5);
     if (!hit) continue;
-    const err = Math.abs(hit.pos.y - targetY);
-    if (err < best.err) best = { err, angle: a };
+    let score = Math.abs(hit.pos.y - targetY);
+    if (obstacle) {
+      const h = heightAtDistance(origin, dirH, vel, obstacle.dist);
+      if (h < obstacle.top) score += (obstacle.top - h) * 10; // la balle heurterait le mur
+    }
+    if (score < best.score) best = { score, angle: a };
   }
   return best.angle;
 }

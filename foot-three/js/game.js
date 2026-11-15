@@ -15,7 +15,8 @@ const FREEKICK_SPOTS = [
   [-14, 22], [-5, 19], [2, 21], [8, 24], [15, 19], [-18, 25],
 ].map(([x, z]) => new THREE.Vector3(x, 0, z));
 const GOALIE_HOME_Z = 0.6;
-const WALL_DISTANCE = 9.15;     // règlement : 9,15 m
+const WALL_DISTANCE = 10.5;     // distance du mur (règlement : 9,15 m)
+const WALL_TOP = 2.0;           // hauteur que la balle doit franchir au-dessus du mur (m)
 const WALL_SPACING = 0.75;      // espace entre joueurs du mur
 const MAX_DRAG_PX = 240;              // glisser de 240 px = puissance maximale
 const AIM_REF_PX = 180;               // glisser de 180 px = viseur au maximum sur le but
@@ -505,7 +506,9 @@ function kick() {
   const origin = ball.pos.clone();
   const dirH = new THREE.Vector3(state.aimX - origin.x, 0, -origin.z).normalize();
   const speed = 14 + state.power * 20;                     // 14 à 34 m/s
-  const angle = solveLaunchAngle(origin, dirH, speed, state.aimY);
+  const hasWall = wall.some((w) => w.active);
+  const obstacle = hasWall ? { dist: WALL_DISTANCE, top: WALL_TOP } : null;
+  const angle = solveLaunchAngle(origin, dirH, speed, state.aimY, obstacle);
 
   ball.vel.set(
     dirH.x * speed * Math.cos(angle),
