@@ -1,0 +1,13 @@
+{
+  "name": "penalty-threejs",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Penalty et coup franc en Three.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
