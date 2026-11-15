@@ -3,7 +3,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import * as SkeletonUtils from 'three/addons/utils/SkeletonUtils.js';
 
 /** Taille réelle d'un joueur en mètres. */
-export const CHARACTER_HEIGHT = 1.8;
+export const CHARACTER_HEIGHT = 1.4;
 
 /**
  * Les modèles Kenney regardent vers +Z. Si un personnage apparaît de dos,

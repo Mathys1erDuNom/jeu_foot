@@ -16,7 +16,7 @@ const FREEKICK_SPOTS = [
 ].map(([x, z]) => new THREE.Vector3(x, 0, z));
 const GOALIE_HOME_Z = 0.6;
 const WALL_DISTANCE = 10.5;     // distance du mur (règlement : 9,15 m)
-const WALL_TOP = 2.0;           // hauteur que la balle doit franchir au-dessus du mur (m)
+const WALL_TOP = 1.6;           // hauteur que la balle doit franchir au-dessus du mur (m)
 const WALL_SPACING = 0.75;      // espace entre joueurs du mur
 const MAX_DRAG_PX = 240;              // glisser de 240 px = puissance maximale
 const AIM_REF_PX = 180;               // glisser de 180 px = viseur au maximum sur le but
@@ -354,6 +354,7 @@ function showMessage(text, isGoal) {
 // Mise en place : balle, tireur, mur, gardien
 // ---------------------------------------------------------------------------
 function resetFormation(spot = pickSpot()) {
+  spot.y = BALL_RADIUS; // le ballon repose sur le sol
   state.spot = spot;
   ball = createBall(spot);
   ballMesh.position.copy(spot);
@@ -468,7 +469,7 @@ function goalieSegment() {
   const K = goalie;
   _ga.set(K.x, K.y, GOALIE_HOME_Z);
   _gh.set(K.dirX * Math.sin(K.lean), Math.cos(K.lean), 0);
-  _gb.copy(_ga).addScaledVector(_gh, 1.85);
+  _gb.copy(_ga).addScaledVector(_gh, 1.45);
   return { a: _ga, b: _gb };
 }
 
@@ -504,18 +505,37 @@ function updateWall(dt) {
 // ---------------------------------------------------------------------------
 function kick() {
   const origin = ball.pos.clone();
-  const dirH = new THREE.Vector3(state.aimX - origin.x, 0, -origin.z).normalize();
   const speed = 14 + state.power * 20;                     // 14 à 34 m/s
   const hasWall = wall.some((w) => w.active);
   const obstacle = hasWall ? { dist: WALL_DISTANCE, top: WALL_TOP } : null;
-  const angle = solveLaunchAngle(origin, dirH, speed, state.aimY, obstacle);
+  const spin = new THREE.Vector3(0, -state.curl * MAX_SPIN, 0); // effet : rotation autour de l'axe vertical
+
+  // La flèche indique le point d'arrivée : on corrige la direction pour compenser la courbe
+  // due à l'effet, de sorte que la balle arrive sur la flèche (la courbe reste visible).
+  let targetX = state.aimX;
+  let dirH = new THREE.Vector3(targetX - origin.x, 0, -origin.z).normalize();
+  let angle = 0;
+  for (let iter = 0; iter < 4; iter++) {
+    dirH = new THREE.Vector3(targetX - origin.x, 0, -origin.z).normalize();
+    angle = solveLaunchAngle(origin, dirH, speed, state.aimY, obstacle, spin);
+    const v = new THREE.Vector3(
+      dirH.x * speed * Math.cos(angle),
+      speed * Math.sin(angle),
+      dirH.z * speed * Math.cos(angle),
+    );
+    const pred = predictCrossing(origin, v, spin, 3);
+    if (!pred) break;
+    const err = state.aimX - pred.pos.x;
+    if (Math.abs(err) < 0.02) break;
+    targetX = THREE.MathUtils.clamp(targetX + err, -25, 25);
+  }
 
   ball.vel.set(
     dirH.x * speed * Math.cos(angle),
     speed * Math.sin(angle),
     dirH.z * speed * Math.cos(angle),
   );
-  ball.spin.set(0, -state.curl * MAX_SPIN, 0); // effet : rotation autour de l'axe vertical
+  ball.spin.copy(spin);
 
   // Le gardien lit le tir (trajectoire prédite avec l'effet)
   const pred = predictCrossing(ball.pos, ball.vel, ball.spin, 3);
@@ -568,7 +588,7 @@ function stepFlight(h) {
   for (const w of wall) {
     if (!w.active) continue;
     _wa.set(w.base.x, w.y + 0.1, w.base.z);
-    _wb.set(w.base.x, w.y + 1.75, w.base.z);
+    _wb.set(w.base.x, w.y + 1.35, w.base.z);
     if (collideSegment(ball, _wa, _wb, 0.28, 0.4)) shot.touched.wall = true;
   }
 

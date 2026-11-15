@@ -10,7 +10,7 @@ import * as THREE from 'three';
 // ---------------------------------------------------------------------------
 
 export const G = 9.81;
-export const BALL_RADIUS = 0.11;
+export const BALL_RADIUS = 0.15;
 
 const BALL_MASS = 0.43;
 const AIR_DENSITY = 1.2;
@@ -138,8 +138,8 @@ export function predictCrossing(pos, vel, spin, maxTime = 3) {
  * horizontalement dans la direction `dirH`. Renvoie BALL_RADIUS si elle touche
  * le sol avant.
  */
-export function heightAtDistance(origin, dirH, vel, dist) {
-  const ball = { pos: origin.clone(), vel: vel.clone(), spin: ZERO.clone() };
+export function heightAtDistance(origin, dirH, vel, dist, spin = ZERO) {
+  const ball = { pos: origin.clone(), vel: vel.clone(), spin: spin.clone() };
   const dt = 1 / 240;
   for (let t = 0; t < 3; t += dt) {
     integrate(ball, dt);
@@ -155,7 +155,7 @@ export function heightAtDistance(origin, dirH, vel, dist) {
  * `targetY` sur la ligne de but. `obstacle` = { dist, top } (un mur) : la balle
  * doit passer au-dessus de `top` à la distance `dist`, sinon le tir est pénalisé.
  */
-export function solveLaunchAngle(origin, dirH, speed, targetY, obstacle = null) {
+export function solveLaunchAngle(origin, dirH, speed, targetY, obstacle = null, spin = ZERO) {
   let best = { score: Infinity, angle: 0 };
   for (let deg = -2; deg <= 45; deg += 0.25) {
     const a = THREE.MathUtils.degToRad(deg);
@@ -164,11 +164,11 @@ export function solveLaunchAngle(origin, dirH, speed, targetY, obstacle = null) 
       speed * Math.sin(a),
       dirH.z * speed * Math.cos(a),
     );
-    const hit = predictCrossing(origin, vel, ZERO, 2.5);
+    const hit = predictCrossing(origin, vel, spin, 2.5);
     if (!hit) continue;
     let score = Math.abs(hit.pos.y - targetY);
     if (obstacle) {
-      const h = heightAtDistance(origin, dirH, vel, obstacle.dist);
+      const h = heightAtDistance(origin, dirH, vel, obstacle.dist, spin);
       if (h < obstacle.top) score += (obstacle.top - h) * 10; // la balle heurterait le mur
     }
     if (score < best.score) best = { score, angle: a };
